@@ -2,8 +2,6 @@ package com.example.prjwebservice.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -22,21 +20,16 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "enrollments")
-public class Enrollment extends BaseEntity {
+@Table(name = "token_blacklist")
+public class TokenBlacklist extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "student_id", nullable = false)
-    private User student;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id", nullable = false)
-    private Course course;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "status_id", nullable = false)
-    private EnrollmentStatus status;
+    @Column(nullable = false, unique = true, length = 512)
+    private String tokenString;
 
     @Column(nullable = false)
-    private LocalDateTime enrolledAt;
+    private LocalDateTime revokedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 }

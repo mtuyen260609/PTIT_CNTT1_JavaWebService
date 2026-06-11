@@ -27,6 +27,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional(readOnly = true)
     public Page<UserResponse> search(String keyword, Pageable pageable) {
         String search = keyword == null ? "" : keyword.trim();
         return userRepository
@@ -37,6 +38,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserResponse getById(Long id) {
         return toResponse(findUser(id));
     }
@@ -60,7 +62,7 @@ public class UserServiceImpl implements UserService {
                 .fullName(request.getFullName())
                 .email(request.getEmail())
                 .role(role)
-                .active(request.getActive() == null || request.getActive())
+                .deleted(request.getDeleted() != null && request.getDeleted())
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -94,8 +96,8 @@ public class UserServiceImpl implements UserService {
         user.setFullName(request.getFullName());
         user.setEmail(request.getEmail());
         user.setRole(role);
-        if (request.getActive() != null) {
-            user.setActive(request.getActive());
+        if (request.getDeleted() != null) {
+            user.setDeleted(request.getDeleted());
         }
 
         return toResponse(userRepository.save(user));
@@ -103,10 +105,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void deactivate(Long id) {
+    public void delete(Long id) {
         User user = findUser(id);
-        user.setActive(false);
-        userRepository.save(user);
+        userRepository.delete(user); // This will trigger @SQLDelete
     }
 
     private User findUser(Long id) {
@@ -121,7 +122,7 @@ public class UserServiceImpl implements UserService {
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .role(user.getRole().getName())
-                .active(user.isActive())
+                .deleted(user.isDeleted())
                 .build();
     }
 }

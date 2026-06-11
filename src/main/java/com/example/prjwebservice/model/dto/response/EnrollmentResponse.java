@@ -15,6 +15,6 @@ public class EnrollmentResponse {
     private final String studentName;
     private final Long courseId;
     private final String courseName;
-    private final EnrollmentStatus status;
+    private final String status;
     private final LocalDateTime enrolledAt;
 }

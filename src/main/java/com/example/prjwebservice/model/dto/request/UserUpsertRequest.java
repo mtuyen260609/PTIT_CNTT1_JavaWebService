@@ -31,5 +31,5 @@ public class UserUpsertRequest {
     @NotBlank
     private String role;
 
-    private Boolean active;
+    private Boolean deleted;
 }

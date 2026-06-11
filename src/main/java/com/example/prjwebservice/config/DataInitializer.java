@@ -1,9 +1,11 @@
 package com.example.prjwebservice.config;
 
 import com.example.prjwebservice.model.entity.Course;
+import com.example.prjwebservice.model.entity.EnrollmentStatus;
 import com.example.prjwebservice.model.entity.Role;
 import com.example.prjwebservice.model.entity.User;
 import com.example.prjwebservice.repository.CourseRepository;
+import com.example.prjwebservice.repository.EnrollmentStatusRepository;
 import com.example.prjwebservice.repository.RoleRepository;
 import com.example.prjwebservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,11 +22,13 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final CourseRepository courseRepository;
+    private final EnrollmentStatusRepository enrollmentStatusRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
         initRoles();
+        initEnrollmentStatuses();
         if (userRepository.count() == 0) {
             Role adminRole = roleRepository.findByName("ADMIN").orElseThrow();
             Role lecturerRole = roleRepository.findByName("LECTURER").orElseThrow();
@@ -36,7 +40,7 @@ public class DataInitializer implements CommandLineRunner {
                     .fullName("System Admin")
                     .email("admin@example.com")
                     .role(adminRole)
-                    .active(true)
+                    .deleted(false)
                     .createdAt(LocalDateTime.now())
                     .build());
 
@@ -46,7 +50,7 @@ public class DataInitializer implements CommandLineRunner {
                     .fullName("Default Lecturer")
                     .email("lecturer@example.com")
                     .role(lecturerRole)
-                    .active(true)
+                    .deleted(false)
                     .createdAt(LocalDateTime.now())
                     .build());
 
@@ -56,7 +60,7 @@ public class DataInitializer implements CommandLineRunner {
                     .fullName("Default Student")
                     .email("student@example.com")
                     .role(studentRole)
-                    .active(true)
+                    .deleted(false)
                     .createdAt(LocalDateTime.now())
                     .build());
 
@@ -65,7 +69,7 @@ public class DataInitializer implements CommandLineRunner {
                     .courseName("Project Management and Grading")
                     .description("Default course for system verification")
                     .credits(3)
-                    .active(true)
+                    .deleted(false)
                     .createdAt(LocalDateTime.now())
                     .lecturer(lecturer)
                     .build());
@@ -77,6 +81,13 @@ public class DataInitializer implements CommandLineRunner {
             roleRepository.save(Role.builder().name("ADMIN").build());
             roleRepository.save(Role.builder().name("LECTURER").build());
             roleRepository.save(Role.builder().name("STUDENT").build());
+        }
+    }
+
+    private void initEnrollmentStatuses() {
+        if (enrollmentStatusRepository.count() == 0) {
+            enrollmentStatusRepository.save(EnrollmentStatus.builder().name("REGISTERED").build());
+            enrollmentStatusRepository.save(EnrollmentStatus.builder().name("DROPPED").build());
         }
     }
 }

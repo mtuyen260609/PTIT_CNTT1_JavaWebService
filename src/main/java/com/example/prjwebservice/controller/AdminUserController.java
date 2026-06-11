@@ -56,9 +56,9 @@ public class AdminUserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deactivate(@PathVariable Long id) {
-        userService.deactivate(id);
-        return build(HttpStatus.NO_CONTENT, "Vô hiệu hóa người dùng thành công", null);
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
+        userService.delete(id);
+        return build(HttpStatus.NO_CONTENT, "Xóa người dùng thành công", null);
     }
 
     private <T> ResponseEntity<ApiResponse<T>> build(HttpStatus status, String message, T data) {

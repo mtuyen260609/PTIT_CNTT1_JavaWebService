@@ -26,6 +26,8 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @Table(name = "users")
+@org.hibernate.annotations.SQLDelete(sql = "UPDATE users SET deleted = true WHERE id=?")
+@org.hibernate.annotations.Where(clause = "deleted=false")
 public class User extends BaseEntity implements UserDetails {
 
     @Column(nullable = false, unique = true, length = 100)
@@ -46,7 +48,7 @@ public class User extends BaseEntity implements UserDetails {
     private Role role;
 
     @Column(nullable = false)
-    private boolean active;
+    private boolean deleted;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -63,7 +65,7 @@ public class User extends BaseEntity implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return active;
+        return !deleted;
     }
 
     @Override
@@ -73,6 +75,6 @@ public class User extends BaseEntity implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return active;
+        return !deleted;
     }
 }

@@ -9,6 +9,7 @@ import com.example.prjwebservice.model.entity.EnrollmentStatus;
 import com.example.prjwebservice.model.entity.User;
 import com.example.prjwebservice.repository.CourseRepository;
 import com.example.prjwebservice.repository.EnrollmentRepository;
+import com.example.prjwebservice.repository.EnrollmentStatusRepository;
 import com.example.prjwebservice.repository.UserRepository;
 import com.example.prjwebservice.service.EnrollmentService;
 import lombok.RequiredArgsConstructor;
@@ -27,27 +28,27 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
+    private final EnrollmentStatusRepository enrollmentStatusRepository;
 
     @Override
     @Transactional
     public EnrollmentResponse enrollCurrentStudent(Long courseId) {
         User student = getCurrentStudent();
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
-
-        if (!course.isActive()) {
-            throw new ConflictException("Lớp học không còn hoạt động");
-        }
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học hoặc lớp học đã bị xóa"));
 
         enrollmentRepository.findByStudent_IdAndCourse_Id(student.getId(), courseId)
                 .ifPresent(existing -> {
                     throw new ConflictException("Sinh viên đã đăng ký lớp học này");
                 });
 
+        EnrollmentStatus status = enrollmentStatusRepository.findByName("REGISTERED")
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trạng thái REGISTERED"));
+
         Enrollment enrollment = Enrollment.builder()
                 .student(student)
                 .course(course)
-                .status(EnrollmentStatus.REGISTERED)
+                .status(status)
                 .enrolledAt(LocalDateTime.now())
                 .build();
 
@@ -80,7 +81,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
                 .studentName(enrollment.getStudent().getFullName())
                 .courseId(enrollment.getCourse().getId())
                 .courseName(enrollment.getCourse().getCourseName())
-                .status(enrollment.getStatus())
+                .status(enrollment.getStatus().getName())
                 .enrolledAt(enrollment.getEnrolledAt())
                 .build();
     }

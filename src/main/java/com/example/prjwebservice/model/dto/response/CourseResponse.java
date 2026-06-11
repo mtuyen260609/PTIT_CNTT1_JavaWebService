@@ -12,7 +12,7 @@ public class CourseResponse {
     private final String courseName;
     private final String description;
     private final Integer credits;
-    private final boolean active;
+    private final boolean deleted;
     private final Long lecturerId;
     private final String lecturerName;
 }

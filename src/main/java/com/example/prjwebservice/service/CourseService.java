@@ -15,5 +15,5 @@ public interface CourseService {
 
     CourseResponse update(Long id, CourseUpsertRequest request);
 
-    void deactivate(Long id);
+    void delete(Long id);
 }

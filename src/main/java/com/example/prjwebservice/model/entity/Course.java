@@ -24,6 +24,8 @@ import java.util.Set;
 @AllArgsConstructor
 @Entity
 @Table(name = "courses")
+@org.hibernate.annotations.SQLDelete(sql = "UPDATE courses SET deleted = true WHERE id=?")
+@org.hibernate.annotations.Where(clause = "deleted=false")
 public class Course extends BaseEntity {
 
     @Column(nullable = false, unique = true, length = 50)
@@ -39,7 +41,7 @@ public class Course extends BaseEntity {
     private Integer credits;
 
     @Column(nullable = false)
-    private boolean active;
+    private boolean deleted;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

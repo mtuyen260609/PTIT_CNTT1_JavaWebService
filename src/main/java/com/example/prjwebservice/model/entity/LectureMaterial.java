@@ -2,8 +2,6 @@ package com.example.prjwebservice.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -22,21 +20,23 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "enrollments")
-public class Enrollment extends BaseEntity {
+@Table(name = "lecture_materials")
+public class LectureMaterial extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "student_id", nullable = false)
-    private User student;
+    @Column(nullable = false, length = 150)
+    private String title;
+
+    @Column(nullable = false, length = 500)
+    private String fileUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "status_id", nullable = false)
-    private EnrollmentStatus status;
+    @JoinColumn(name = "lecturer_id", nullable = false)
+    private User lecturer;
 
     @Column(nullable = false)
-    private LocalDateTime enrolledAt;
+    private LocalDateTime uploadedAt;
 }

@@ -56,9 +56,9 @@ public class AdminCourseController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deactivate(@PathVariable Long id) {
-        courseService.deactivate(id);
-        return build(HttpStatus.NO_CONTENT, "Vô hiệu hóa lớp học thành công", null);
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
+        courseService.delete(id);
+        return build(HttpStatus.NO_CONTENT, "Xóa lớp học thành công", null);
     }
 
     private <T> ResponseEntity<ApiResponse<T>> build(HttpStatus status, String message, T data) {

@@ -26,7 +26,7 @@ public class CourseUpsertRequest {
     @Positive
     private Integer credits;
 
-    private Boolean active;
+    private Boolean deleted;
 
     private Long lecturerId;
 }

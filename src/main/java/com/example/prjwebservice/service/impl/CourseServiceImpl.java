@@ -25,6 +25,7 @@ public class CourseServiceImpl implements CourseService {
     private final UserRepository userRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public Page<CourseResponse> search(String keyword, Pageable pageable) {
         String search = keyword == null ? "" : keyword.trim();
         return courseRepository.findByCourseCodeContainingIgnoreCaseOrCourseNameContainingIgnoreCase(
@@ -33,6 +34,7 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public CourseResponse getById(Long id) {
         return toResponse(findCourse(id));
     }
@@ -49,7 +51,7 @@ public class CourseServiceImpl implements CourseService {
                 .courseName(request.getCourseName())
                 .description(request.getDescription())
                 .credits(request.getCredits())
-                .active(request.getActive() == null || request.getActive())
+                .deleted(request.getDeleted() != null && request.getDeleted())
                 .createdAt(LocalDateTime.now())
                 .lecturer(resolveLecturer(request.getLecturerId()))
                 .build();
@@ -72,8 +74,8 @@ public class CourseServiceImpl implements CourseService {
         course.setCourseName(request.getCourseName());
         course.setDescription(request.getDescription());
         course.setCredits(request.getCredits());
-        if (request.getActive() != null) {
-            course.setActive(request.getActive());
+        if (request.getDeleted() != null) {
+            course.setDeleted(request.getDeleted());
         }
         course.setLecturer(resolveLecturer(request.getLecturerId()));
 
@@ -82,10 +84,9 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     @Transactional
-    public void deactivate(Long id) {
+    public void delete(Long id) {
         Course course = findCourse(id);
-        course.setActive(false);
-        courseRepository.save(course);
+        courseRepository.delete(course); // This will trigger @SQLDelete
     }
 
     private User resolveLecturer(Long lecturerId) {
@@ -108,7 +109,7 @@ public class CourseServiceImpl implements CourseService {
                 .courseName(course.getCourseName())
                 .description(course.getDescription())
                 .credits(course.getCredits())
-                .active(course.isActive())
+                .deleted(course.isDeleted())
                 .lecturerId(course.getLecturer() == null ? null : course.getLecturer().getId())
                 .lecturerName(course.getLecturer() == null ? null : course.getLecturer().getFullName())
                 .build();
