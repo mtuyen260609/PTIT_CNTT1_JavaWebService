@@ -1,7 +1,9 @@
 package com.example.prjwebservice.aspect;
 
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +16,17 @@ import com.example.prjwebservice.model.dto.response.SubmissionResponse;
 @Component
 public class LoggingAspect {
 
-    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(LoggingAspect.class);
+    private static final Logger logger = LoggerFactory.getLogger(LoggingAspect.class);
+
+    @Around("execution(* com.example.prjwebservice.service.impl.*.*(..))")
+    public Object logTime(ProceedingJoinPoint joinPoint) throws Throwable {
+        long start = System.currentTimeMillis();
+        Object proceed = joinPoint.proceed();
+        long executionTime = System.currentTimeMillis() - start;
+        
+        logger.info("[TIME] {} executed in {}ms", joinPoint.getSignature().toShortString(), executionTime);
+        return proceed;
+    }
 
     @AfterReturning(
             pointcut = "execution(* com.example.prjwebservice.service.SubmissionService.grade(..)) && args(request)",
