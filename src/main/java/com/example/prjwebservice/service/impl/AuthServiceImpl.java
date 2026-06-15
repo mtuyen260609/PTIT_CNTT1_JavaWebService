@@ -87,19 +87,31 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public AuthResponse refresh(TokenRefreshRequest request) {
         String refreshToken = request.getRefreshToken();
+        
+        // Kiểm tra blacklist
         if (tokenBlacklistRepository.existsByTokenString(refreshToken)) {
             throw new BadRequestException("Refresh token đã bị vô hiệu hóa");
         }
 
-        String username = jwtService.extractUsername(refreshToken);
+        String username;
+        try {
+            username = jwtService.extractUsername(refreshToken);
+        } catch (Exception e) {
+            throw new BadRequestException("Refresh token không hợp lệ");
+        }
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
         if (!jwtService.isTokenValid(refreshToken, user)) {
             throw new BadRequestException("Refresh token không hợp lệ hoặc đã hết hạn");
         }
+
+        // Token Rotation: Vô hiệu hóa refresh token cũ ngay sau khi dùng để lấy cái mới
+        blacklistToken(refreshToken, user);
 
         return AuthResponse.builder()
                 .accessToken(jwtService.generateToken(user))
@@ -111,21 +123,47 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void logout(String token) {
-        if (token != null && token.startsWith("Bearer ")) {
-            token = token.substring(7);
-            if (!tokenBlacklistRepository.existsByTokenString(token)) {
-                String username = jwtService.extractUsername(token);
-                User user = userRepository.findByUsername(username)
-                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
-                        
-                TokenBlacklist blacklist = TokenBlacklist.builder()
-                        .tokenString(token)
-                        .revokedAt(LocalDateTime.now())
-                        .user(user)
-                        .build();
-                tokenBlacklistRepository.save(blacklist);
+    public void logout(String authHeader, com.example.prjwebservice.model.dto.request.LogoutRequest request) {
+        // 1. Blacklist Access Token
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String accessToken = authHeader.substring(7);
+            try {
+                String username = jwtService.extractUsername(accessToken);
+                userRepository.findByUsername(username).ifPresent(user -> blacklistToken(accessToken, user));
+            } catch (Exception ignored) {
+                // Token có thể đã hết hạn hoặc lỗi, nhưng vẫn logout được
             }
+        }
+
+        // 2. Blacklist Refresh Token
+        String refreshToken = request.getRefreshToken();
+        try {
+            String username = jwtService.extractUsername(refreshToken);
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+            
+            if (jwtService.isTokenValid(refreshToken, user)) {
+                blacklistToken(refreshToken, user);
+            }
+        } catch (Exception e) {
+            throw new BadRequestException("Refresh token không hợp lệ");
+        }
+    }
+
+    private void blacklistToken(String token, User user) {
+        if (!tokenBlacklistRepository.existsByTokenString(token)) {
+            java.util.Date expiryDate = jwtService.extractExpiration(token);
+            java.time.LocalDateTime expiryLDT = expiryDate.toInstant()
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDateTime();
+
+            TokenBlacklist blacklist = TokenBlacklist.builder()
+                    .tokenString(token)
+                    .revokedAt(LocalDateTime.now())
+                    .expiryDate(expiryLDT)
+                    .user(user)
+                    .build();
+            tokenBlacklistRepository.save(blacklist);
         }
     }
 
@@ -146,9 +184,24 @@ public class AuthServiceImpl implements AuthService {
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
+
     }
 
-    private final java.util.Map<String, String> resetTokens = new java.util.concurrent.ConcurrentHashMap<>();
+    private static class ResetTokenInfo {
+        String username;
+        LocalDateTime expiry;
+
+        ResetTokenInfo(String username, int minutes) {
+            this.username = username;
+            this.expiry = LocalDateTime.now().plusMinutes(minutes);
+        }
+
+        boolean isExpired() {
+            return LocalDateTime.now().isAfter(expiry);
+        }
+    }
+
+    private final java.util.Map<String, ResetTokenInfo> resetTokens = new java.util.concurrent.ConcurrentHashMap<>();
 
     @Override
     public void forgotPassword(com.example.prjwebservice.model.dto.request.ForgotPasswordRequest request) {
@@ -156,21 +209,22 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với email này"));
 
         String token = java.util.UUID.randomUUID().toString();
-        resetTokens.put(token, user.getUsername());
+        resetTokens.put(token, new ResetTokenInfo(user.getUsername(), 15)); // Hết hạn sau 15 phút
         
         System.out.println("[MOCK EMAIL] Gửi link reset mật khẩu tới " + request.getEmail());
-        System.out.println("[MOCK EMAIL] Token reset của bạn là: " + token);
+        System.out.println("[MOCK EMAIL] Token reset của bạn là: " + token + " (Hết hạn trong 15 phút)");
     }
 
     @Override
     @Transactional
     public void resetPassword(com.example.prjwebservice.model.dto.request.ResetPasswordRequest request) {
-        String username = resetTokens.get(request.getToken());
-        if (username == null) {
+        ResetTokenInfo tokenInfo = resetTokens.get(request.getToken());
+        if (tokenInfo == null || tokenInfo.isExpired()) {
+            if (tokenInfo != null) resetTokens.remove(request.getToken());
             throw new com.example.prjwebservice.exception.BadRequestException("Token không hợp lệ hoặc đã hết hạn");
         }
 
-        User user = userRepository.findByUsername(username)
+        User user = userRepository.findByUsername(tokenInfo.username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));

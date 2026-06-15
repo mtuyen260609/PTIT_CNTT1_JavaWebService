@@ -44,8 +44,11 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader(value = "Authorization", required = false) String token) {
-        authService.logout(token);
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @RequestHeader(value = "Authorization", required = false) String token,
+            @Valid @RequestBody com.example.prjwebservice.model.dto.request.LogoutRequest request
+    ) {
+        authService.logout(token, request);
         return ResponseEntity.ok(ApiResponse.<Void>builder()
                 .success(true)
                 .message("Đăng xuất thành công")

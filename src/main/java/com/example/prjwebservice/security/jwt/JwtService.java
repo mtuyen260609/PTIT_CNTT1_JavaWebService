@@ -27,17 +27,18 @@ public class JwtService {
     private long refreshExpirationDays;
 
     public String generateToken(User user) {
-        return buildToken(user, expirationMinutes * 60_000);
+        return buildToken(user, expirationMinutes * 60_000, "ACCESS");
     }
 
     public String generateRefreshToken(User user) {
-        return buildToken(user, refreshExpirationDays * 24 * 60 * 60_000);
+        return buildToken(user, refreshExpirationDays * 24 * 60 * 60_000, "REFRESH");
     }
 
-    private String buildToken(User user, long expirationMillis) {
+    private String buildToken(User user, long expirationMillis, String type) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", user.getRole().getName());
         claims.put("userId", user.getId());
+        claims.put("type", type);
         return Jwts.builder()
                 .claims(claims)
                 .subject(user.getUsername())
@@ -49,6 +50,10 @@ public class JwtService {
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    public String extractType(String token) {
+        return extractClaim(token, claims -> claims.get("type", String.class));
     }
 
     public Date extractExpiration(String token) {

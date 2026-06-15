@@ -14,7 +14,7 @@ public interface AuthService {
 
     AuthResponse refresh(TokenRefreshRequest request);
 
-    void logout(String token);
+    void logout(String accessToken, com.example.prjwebservice.model.dto.request.LogoutRequest request);
 
     void changePassword(ChangePasswordRequest request);
 

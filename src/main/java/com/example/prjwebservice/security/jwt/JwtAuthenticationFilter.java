@@ -36,7 +36,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String path = request.getServletPath();
-        if (path.startsWith("/api/v1/auth/")) {
+        // Các endpoint này không cần kiểm tra token trong filter, hoặc tự xử lý token (như refresh/logout)
+        if (path.equals("/api/v1/auth/login") || 
+            path.equals("/api/v1/auth/register") || 
+            path.equals("/api/v1/auth/refresh") ||
+            path.equals("/api/v1/auth/forgot-password") ||
+            path.equals("/api/v1/auth/reset-password")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -52,6 +57,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             if (tokenBlacklistRepository.existsByTokenString(token)) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Token has been revoked");
+                return;
+            }
+
+            String tokenType = jwtService.extractType(token);
+            if (!"ACCESS".equals(tokenType)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Invalid token type");
                 return;
             }
 
